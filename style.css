@@ -153,3 +153,32 @@ main {
 .news-source {
     margin-block: 12px;
 }
+/* css for pgaination */
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.pagination-container button {
+    padding: 8px 12px;
+    border: 1px solid var(--accent-color);
+    background-color: white;
+    color: var(--accent-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.pagination-container button.active-page {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.pagination-container button:disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
