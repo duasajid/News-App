@@ -116,15 +116,34 @@ main {
     margin-top: 80px;
 }
 
-.cards-container {
+ .cards-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+
     justify-content: space-between;
     flex-wrap: wrap;
     row-gap: 20px;
     align-items: start;
+} 
+
+.card-content p {
+    max-height: 3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; 
+}
+
+.read-more {
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .card {
     width: 360px;
+    height:10px;
     min-height: 400px;
     box-shadow: 0 0 4px #d4ecff;
     border-radius: 4px;
@@ -153,7 +172,7 @@ main {
 .news-source {
     margin-block: 12px;
 }
-/* css for pgaination */
+
 
 .pagination-container {
     display: flex;

@@ -3,8 +3,8 @@ const url = "https://newsapi.org/v2/everything?q=";
 
 let currentQuery = "India"; 
 let currentPage = 1; 
-let articlesPerPage = 5; 
-let totalPages = 3; 
+let articlesPerPage = 12; 
+let curSelectedNav = null;
 
 window.addEventListener("load", () => fetchNews(currentQuery));
 
@@ -13,28 +13,34 @@ function reload() {
 }
 
 async function fetchNews(query) {
-    const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
-    const data = await res.json();
-    distributeArticles(data.articles, query);
+    const cachedData = localStorage.getItem(query);
+
+    if (cachedData) {
+        const data = JSON.parse(cachedData);
+        distributeArticles(data.articles, query);
+    } else {
+        const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
+        const data = await res.json();
+        localStorage.setItem(query, JSON.stringify(data));
+        distributeArticles(data.articles, query);
+    }
 }
 
 function distributeArticles(articles, query) {
-
+    const totalPages = Math.ceil(articles.length / articlesPerPage);
     const paginatedArticles = [];
-    const articlesPerPageCount = Math.ceil(articles.length / totalPages);
-
-    for (let i = 0; i < articles.length; i += articlesPerPageCount) {
-        paginatedArticles.push(articles.slice(i, i + articlesPerPageCount));
+    for (let i = 0; i < articles.length; i += articlesPerPage) {
+        paginatedArticles.push(articles.slice(i, i + articlesPerPage));
     }
 
     renderPage(paginatedArticles[currentPage - 1] || []);
-    setupPagination(paginatedArticles, query);
+    setupPagination(paginatedArticles, query, totalPages);
 }
 
 function renderPage(articles) {
     const cardsContainer = document.getElementById("cards-container");
     const newsCardTemplate = document.getElementById("template-news-card");
-    cardsContainer.innerHTML = ""; 
+    cardsContainer.innerHTML = "";
 
     articles.forEach((article) => {
         if (!article.urlToImage) return;
@@ -42,6 +48,8 @@ function renderPage(articles) {
         fillDataInCard(cardClone, article);
         cardsContainer.appendChild(cardClone);
     });
+
+    cardsContainer.scrollTop = 0;
 }
 
 function fillDataInCard(cardClone, article) {
@@ -49,6 +57,7 @@ function fillDataInCard(cardClone, article) {
     const newsTitle = cardClone.querySelector("#news-title");
     const newsSource = cardClone.querySelector("#news-source");
     const newsDesc = cardClone.querySelector("#news-desc");
+    const readMore = cardClone.querySelector("#read-more");
 
     newsImg.src = article.urlToImage || "https://via.placeholder.com/400x200";
     newsTitle.innerHTML = article.title || "No title available";
@@ -57,18 +66,28 @@ function fillDataInCard(cardClone, article) {
     const date = new Date(article.publishedAt || Date.now()).toLocaleString("en-US", {
         timeZone: "Asia/Jakarta",
     });
-
     newsSource.innerHTML = `${article.source?.name || "Unknown Source"} · ${date}`;
+
+    if (newsDesc.scrollHeight > newsDesc.clientHeight) {
+        readMore.style.display = "inline";
+        readMore.addEventListener("click", (e) => {
+            e.preventDefault();
+            newsDesc.style.whiteSpace = "normal";
+            newsDesc.style.overflow = "visible";
+            readMore.style.display = "none";
+        });
+    }
+
     cardClone.firstElementChild.addEventListener("click", () => {
         window.open(article.url, "_blank");
     });
 }
 
-function setupPagination(paginatedArticles, query) {
+function setupPagination(paginatedArticles, query, totalPages) {
     const paginationContainer = document.getElementById("pagination-container") || createPaginationContainer();
-    paginationContainer.innerHTML = ""; 
+    paginationContainer.innerHTML = "";
 
-  
+    // Previous Button
     const prevButton = document.createElement("button");
     prevButton.textContent = "Previous";
     prevButton.disabled = currentPage === 1;
@@ -76,31 +95,33 @@ function setupPagination(paginatedArticles, query) {
         if (currentPage > 1) {
             currentPage--;
             renderPage(paginatedArticles[currentPage - 1]);
-            setupPagination(paginatedArticles, query);
+            setupPagination(paginatedArticles, query, totalPages);
         }
     });
     paginationContainer.appendChild(prevButton);
 
-    paginatedArticles.forEach((_, index) => {
+    // Page Buttons
+    for (let i = 1; i <= totalPages; i++) {
         const pageButton = document.createElement("button");
-        pageButton.textContent = index + 1;
-        pageButton.className = currentPage === index + 1 ? "active-page" : "";
+        pageButton.textContent = i;
+        pageButton.className = currentPage === i ? "active-page" : "";
         pageButton.addEventListener("click", () => {
-            currentPage = index + 1;
+            currentPage = i;
             renderPage(paginatedArticles[currentPage - 1]);
-            setupPagination(paginatedArticles, query);
+            setupPagination(paginatedArticles, query, totalPages);
         });
         paginationContainer.appendChild(pageButton);
-    });
+    }
 
+    // Next Button
     const nextButton = document.createElement("button");
     nextButton.textContent = "Next";
-    nextButton.disabled = currentPage === paginatedArticles.length;
+    nextButton.disabled = currentPage === totalPages;
     nextButton.addEventListener("click", () => {
-        if (currentPage < paginatedArticles.length) {
+        if (currentPage < totalPages) {
             currentPage++;
             renderPage(paginatedArticles[currentPage - 1]);
-            setupPagination(paginatedArticles, query);
+            setupPagination(paginatedArticles, query, totalPages);
         }
     });
     paginationContainer.appendChild(nextButton);
@@ -116,7 +137,7 @@ function createPaginationContainer() {
 
 function onNavItemClick(id) {
     currentQuery = id;
-    currentPage = 1; 
+    currentPage = 1;
     fetchNews(id);
     const navItem = document.getElementById(id);
     curSelectedNav?.classList.remove("active");
@@ -135,4 +156,4 @@ searchButton.addEventListener("click", () => {
     fetchNews(query);
     curSelectedNav?.classList.remove("active");
     curSelectedNav = null;
-});
+}); 
